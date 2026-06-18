@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FTL iMeeting Booking System
 
-## Getting Started
+This project is a full-stack web application built for the **Full Stack at FTL Gym** technical test. 
 
-First, run the development server:
+It is designed to manage meeting room bookings (Pesan Ruangan) and demonstrates a complete, end-to-end flow from the user interface to the database.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Architecture
+
+This project is built using **Next.js** as a complete full-stack framework. 
+
+Because Next.js can handle both client-side UI (Frontend) and server-side logic (Backend) within a single repository, there is no need to separate the architecture into two distinct projects.
+
+*   **Frontend**: Built with React, Tailwind CSS, and Next.js App Router (`app/page.tsx`, `app/pesan-ruangan/page.tsx`). It features a modern, responsive UI designed to match the provided specifications.
+*   **Backend / API**: Uses Next.js **Route Handlers** (`app/api/bookings/route.ts`) to simulate a proper backend REST API workflow. The frontend sends HTTP requests to these routes to fetch, create, update, and delete data.
+*   **Database**: Powered by **Supabase** (PostgreSQL). The backend API interacts securely with Supabase using the `@supabase/supabase-js` client.
+
+## Features
+
+*   **Dashboard**: View all meeting room bookings in a clean, paginated data table.
+*   **Pesan Ruangan (Create)**: A comprehensive form to book a meeting room, including capacity and data validation.
+*   **Edit Booking**: Modify existing bookings (updates are sent via `PUT` requests to the API).
+*   **Delete Booking**: Remove bookings with a single click (handled via `DELETE` requests to the API).
+
+## Tech Stack
+
+*   **Framework**: Next.js 15 (App Router)
+*   **Styling**: Tailwind CSS
+*   **Database**: Supabase
+*   **Icons**: Heroicons
+
+## Environment Variables
+
+To run this project locally, create a `.env.local` file in the root directory with the following variables:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
