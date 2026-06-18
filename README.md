@@ -27,12 +27,3 @@ Because Next.js can handle both client-side UI (Frontend) and server-side logic 
 *   **Styling**: Tailwind CSS
 *   **Database**: Supabase
 *   **Icons**: Heroicons
-
-## Environment Variables
-
-To run this project locally, create a `.env.local` file in the root directory with the following variables:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
