@@ -1,14 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Booking } from "./actions";
+import { Booking } from "./page";
 
 interface DashboardClientProps {
   initialBookings: Booking[];
-  totalCount: number;
-  currentPage: number;
-  limit: number;
-  initialError?: string;
 }
 
 const ROOMS_CONFIG: { [key: string]: number } = {
@@ -18,21 +14,13 @@ const ROOMS_CONFIG: { [key: string]: number } = {
 };
 
 const UNITS = ["UNIT KEUANGAN", "UNIT SDM", "UNIT IT", "UNIT OPERASIONAL"];
+const LIMIT = 10;
 
-export default function DashboardClient({
-  initialBookings,
-  totalCount,
-  currentPage,
-  limit,
-  initialError,
-}: DashboardClientProps) {
-  // Client States
+export default function DashboardClient({ initialBookings }: DashboardClientProps) {
+  // Client States (100% Client-Side Memory Cache)
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
-  const [total, setTotal] = useState<number>(totalCount);
-  const [activePage, setActivePage] = useState<number>(currentPage);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [activePage, setActivePage] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [dbError, setDbError] = useState<string | null>(initialError || null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,30 +42,11 @@ export default function DashboardClient({
     setCapacity(ROOMS_CONFIG[selectedRoom] || 10);
   }, [selectedRoom]);
 
-  // Fetch paginated bookings from API
-  const fetchBookings = async (pageNumber: number) => {
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/bookings?page=${pageNumber}&limit=${limit}`);
-      const data = await res.json();
-      if (data.success) {
-        setBookings(data.bookings);
-        setTotal(data.totalCount);
-        setActivePage(pageNumber);
-      } else {
-        console.error(data.error);
-      }
-    } catch (err) {
-      console.error("Failed to fetch bookings:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Handle page change
   const handlePageChange = (pageNumber: number) => {
-    if (pageNumber < 1 || pageNumber > Math.ceil(total / limit)) return;
-    fetchBookings(pageNumber);
+    const totalPages = Math.ceil(bookings.length / LIMIT) || 1;
+    if (pageNumber < 1 || pageNumber > totalPages) return;
+    setActivePage(pageNumber);
   };
 
   // Format date to Indonesian (e.g. 11 Desember 2024)
@@ -111,7 +80,7 @@ export default function DashboardClient({
   };
 
   // Handle Form Submission
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMsg(null);
 
@@ -147,50 +116,38 @@ export default function DashboardClient({
     }
 
     setIsSubmitting(true);
-    try {
-      const res = await fetch("/api/bookings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          unit: selectedUnit,
-          roomName: selectedRoom,
-          roomCapacity: capacity,
-          bookingDate,
-          startTime,
-          endTime,
-          totalParticipants: numParticipants,
-          consumptionType: selectedConsumptions.length > 0 ? selectedConsumptions.join(", ") : "-",
-        }),
-      });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setSuccessMsg("Ruang rapat berhasil dipesan!");
-        setIsModalOpen(false);
-        
-        // Reset form
-        setBookingDate("");
-        setStartTime("");
-        setEndTime("");
-        setParticipants("");
-        setSelectedConsumptions([]);
-        
-        // Refresh bookings on current page
-        fetchBookings(activePage);
+    // Simulate database write with minor UX transition delay
+    setTimeout(() => {
+      const newBooking: Booking = {
+        id: Date.now(),
+        unit: selectedUnit,
+        room_name: selectedRoom,
+        room_capacity: capacity,
+        booking_date: bookingDate,
+        start_time: startTime,
+        end_time: endTime,
+        total_participants: numParticipants,
+        consumption_type: selectedConsumptions.length > 0 ? selectedConsumptions.join(", ") : "-",
+        created_at: new Date().toISOString(),
+      };
 
-        // Clear success message after 3 seconds
-        setTimeout(() => setSuccessMsg(null), 3000);
-      } else {
-        setErrorMsg(data.error || "Terjadi kesalahan saat menyimpan pemesanan.");
-      }
-    } catch (err) {
-      console.error("Failed to save booking:", err);
-      setErrorMsg("Gagal menghubungi server. Silakan coba lagi.");
-    } finally {
+      setBookings((prev) => [newBooking, ...prev]);
+      setSuccessMsg("Ruang rapat berhasil dipesan!");
+      setIsModalOpen(false);
+
+      // Reset form fields
+      setBookingDate("");
+      setStartTime("");
+      setEndTime("");
+      setParticipants("");
+      setSelectedConsumptions([]);
+      setActivePage(1); // Show newly inserted booking at the top
       setIsSubmitting(false);
-    }
+
+      // Clear success notification after 3 seconds
+      setTimeout(() => setSuccessMsg(null), 3000);
+    }, 450);
   };
 
   const toggleConsumption = (item: string) => {
@@ -199,10 +156,14 @@ export default function DashboardClient({
     );
   };
 
-  // Pagination bounds
-  const totalPages = Math.ceil(total / limit) || 1;
-  const startRow = total === 0 ? 0 : (activePage - 1) * limit + 1;
-  const endRow = Math.min(activePage * limit, total);
+  // Pagination calculations
+  const total = bookings.length;
+  const totalPages = Math.ceil(total / LIMIT) || 1;
+  const startRow = total === 0 ? 0 : (activePage - 1) * LIMIT + 1;
+  const endRow = Math.min(activePage * LIMIT, total);
+
+  // Paginate list
+  const paginatedBookings = bookings.slice((activePage - 1) * LIMIT, activePage * LIMIT);
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f7f9fa] font-sans antialiased text-[#2d3748]">
@@ -341,16 +302,6 @@ export default function DashboardClient({
 
           {/* Bookings Card Table */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
-            {/* Loading Overlay */}
-            {isLoading && (
-              <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-10">
-                <svg className="animate-spin h-8 w-8 text-[#458197]" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-              </div>
-            )}
-
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -365,8 +316,8 @@ export default function DashboardClient({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {bookings.length > 0 ? (
-                    bookings.map((booking) => (
+                  {paginatedBookings.length > 0 ? (
+                    paginatedBookings.map((booking) => (
                       <tr key={booking.id} className="hover:bg-gray-50/70 transition-colors">
                         <td className="px-6 py-4.5 text-sm font-bold text-gray-800">
                           {booking.unit}
